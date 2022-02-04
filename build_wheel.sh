@@ -24,6 +24,12 @@ VERSION_NUMBER=${split_array[1]}
 
 echo "Targeting Python version: $VERSION_NUMBER"
 
+if ! command -v conda &> /dev/null
+then
+    echo "Conda could not be found"
+    exit
+fi
+
 while true; do
     read -rp "Do you want to start?" yn
     case $yn in
@@ -38,16 +44,22 @@ set -e
 
 cd "$CURRDIR"
 
-git clone https://github.com/borglab/gtsam.git -b $GTSAM_BRANCH
+if [ ! -d "./gtsam" ]; then
+    git clone https://github.com/borglab/gtsam.git -b $GTSAM_BRANCH
+fi
 
 brew install wget
 
-wget https://boostorg.jfrog.io/artifactory/main/release/1.73.0/source/boost_1_73_0.tar.gz
+if [ ! -f "./boost_1_73_0.tar.gz" ]; then
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.73.0/source/boost_1_73_0.tar.gz
+fi
 
-tar xzf boost_1_73_0.tar.gz
-cd boost_1_73_0
-./bootstrap.sh --prefix="$CURRDIR"/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
-./b2 -j"$(sysctl -n hw.logicalcpu)" cxxflags="-fPIC" runtime-link=static variant=release link=static cxxflags="-mmacosx-version-min=$TARGET_SYSVER" install
+if [ ! -d "./boost_1_73_0" ]; then
+    tar xzf boost_1_73_0.tar.gz
+    cd boost_1_73_0
+    ./bootstrap.sh --prefix="$CURRDIR"/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
+    ./b2 -j"$(sysctl -n hw.logicalcpu)" cxxflags="-fPIC" runtime-link=static variant=release link=static cxxflags="-mmacosx-version-min=$TARGET_SYSVER" install
+fi
 
 # Build GTSAM
 cd "$CURRDIR"
@@ -55,6 +67,7 @@ mkdir -p "$CURRDIR"/wheelhouse_unrepaired
 mkdir -p "$CURRDIR"/wheelhouse
 
 cd "$CURRDIR"/gtsam
+git checkout .
 
 patch -p0 < "$CURRDIR"/setup.py.in.patch
 
@@ -65,13 +78,20 @@ ORIGPATH=$PATH
 PYTHON_LIBRARY=$CURRDIR/libpython-not-needed-symbols-exported-by-interpreter
 touch "${PYTHON_LIBRARY}"
 
+# Create conda env
+CONDA_PATH=$(conda info | grep -i 'base environment' | awk '{print $4}')
+source "$CONDA_PATH"/etc/profile.d/conda.sh
+
+conda create -n gtsam_wheel_build python="$VERSION_NUMBER" -y
+conda activate gtsam_wheel_build
+
 # Compile wheels
-PYBIN="$HOMEBREW_PREFIX/opt/$PYTHON_VER/bin"
+PYBIN="$(dirname "$(which python)")"
 "${PYBIN}/pip3" install -r ./gtsam/python/requirements.txt
 BUILDDIR="$CURRDIR/gtsam_$PYTHON_VER/gtsam_build"
 mkdir -p "$BUILDDIR"
 cd "$BUILDDIR"
-export PATH=$PYBIN:$PYBIN:$HOMEBREW_PREFIX/bin:$ORIGPATH
+export PATH=$PYBIN:$HOMEBREW_PREFIX/bin:$ORIGPATH
 "${PYBIN}/pip3" install delocate
 
 PYTHON_EXECUTABLE=${PYBIN}/python3
@@ -129,14 +149,16 @@ for whln in "$CURRDIR"/wheelhouse/*.whl; do
     unzip "$whl.whl" -d "$whl"
 
     cd "$whl"
-    install_name_tool -change @loader_path/../../../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib @loader_path/../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib gtsam-$GTSAM_PYTHON_VERSION.data/purelib/gtsam/gtsam.cpython-*-darwin.so
+    if [ -d gtsam-4.2a4.data/purelib ]; then
+        install_name_tool -change @loader_path/../../../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib @loader_path/../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib gtsam-$GTSAM_PYTHON_VERSION.data/purelib/gtsam/gtsam.cpython-*-darwin.so
 
-    install_name_tool -change @loader_path/../../../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib @loader_path/../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib gtsam-$GTSAM_PYTHON_VERSION.data/purelib/gtsam_unstable/gtsam_unstable.cpython-*-darwin.so
+        install_name_tool -change @loader_path/../../../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib @loader_path/../gtsam.dylibs/libgtsam.$GTSAM_LIB_VERSION.dylib gtsam-$GTSAM_PYTHON_VERSION.data/purelib/gtsam_unstable/gtsam_unstable.cpython-*-darwin.so
 
-    install_name_tool -change @loader_path/../../../gtsam.dylibs/libgtsam_unstable.$GTSAM_LIB_VERSION.dylib @loader_path/../gtsam.dylibs/libgtsam_unstable.$GTSAM_LIB_VERSION.dylib gtsam-$GTSAM_PYTHON_VERSION.data/purelib/gtsam_unstable/gtsam_unstable.cpython-*-darwin.so
+        install_name_tool -change @loader_path/../../../gtsam.dylibs/libgtsam_unstable.$GTSAM_LIB_VERSION.dylib @loader_path/../gtsam.dylibs/libgtsam_unstable.$GTSAM_LIB_VERSION.dylib gtsam-$GTSAM_PYTHON_VERSION.data/purelib/gtsam_unstable/gtsam_unstable.cpython-*-darwin.so
 
-    zip -r "../$whl.whl" ./*
-
+        zip -r "../$whl.whl" ./*
+    fi
+    
     cd "$CURRDIR/wheelhouse"
     rm -rf "$whl"
 done
