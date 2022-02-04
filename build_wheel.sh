@@ -4,7 +4,7 @@ CURRDIR=$(pwd)
 
 TARGET_SYSVER=11.0
 
-GTSAM_BRANCH="release/4.2a4"
+GTSAM_BRANCH="4.2a4"
 GTSAM_LIB_VERSION="4.2.0"
 GTSAM_PYTHON_VERSION="4.2a4"
 PYTHON_VER="python@3.8"
@@ -36,6 +36,10 @@ done
 set -x
 set -e
 
+cd "$CURRDIR"
+
+git clone https://github.com/borglab/gtsam.git -b $GTSAM_BRANCH
+
 brew install wget
 
 wget https://boostorg.jfrog.io/artifactory/main/release/1.73.0/source/boost_1_73_0.tar.gz
@@ -50,8 +54,6 @@ cd "$CURRDIR"
 mkdir -p "$CURRDIR"/wheelhouse_unrepaired
 mkdir -p "$CURRDIR"/wheelhouse
 
-git clone https://github.com/borglab/gtsam.git -b $GTSAM_BRANCH
-
 cd "$CURRDIR"/gtsam
 
 patch -p0 < "$CURRDIR"/setup.py.in.patch
@@ -65,9 +67,8 @@ touch "${PYTHON_LIBRARY}"
 
 # Compile wheels
 PYBIN="$HOMEBREW_PREFIX/opt/$PYTHON_VER/bin"
-"${PYBIN}/pip3" install -r ./requirements.txt
-PYTHONVER="$(basename "$(dirname "$PYBIN")")"
-BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
+"${PYBIN}/pip3" install -r ./gtsam/python/requirements.txt
+BUILDDIR="$CURRDIR/gtsam_$PYTHON_VER/gtsam_build"
 mkdir -p "$BUILDDIR"
 cd "$BUILDDIR"
 export PATH=$PYBIN:$PYBIN:$HOMEBREW_PREFIX/bin:$ORIGPATH
