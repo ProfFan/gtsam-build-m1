@@ -1,0 +1,12 @@
+
+*.gz
+boost_1_73_0/*
+boost_1_75_0/*
+boost_1_78_0/*
+boost_install/*
+gtsam/*
+gtsam_python@3.8/*
+gtsam_python@3.9/*
+gtsam_python@3.10/*
+wheelhouse/*
+libpython-not-needed-symbols-exported-by-interpreter
