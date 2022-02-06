@@ -4,10 +4,10 @@ CURRDIR=$(pwd)
 
 TARGET_SYSVER=11.0
 
-GTSAM_BRANCH="4.2a4"
+GTSAM_BRANCH="release/4.2a5"
 GTSAM_LIB_VERSION="4.2.0"
-GTSAM_PYTHON_VERSION="4.2a4"
-PYTHON_VER="python@3.9"
+GTSAM_PYTHON_VERSION="4.2a5"
+PYTHON_VER="python@3.8"
 HOMEBREW_PREFIX="/opt/homebrew"
 
 echo "CURRDIR=$CURRDIR"
@@ -50,13 +50,13 @@ fi
 
 brew install wget
 
-if [ ! -f "./boost_1_73_0.tar.gz" ]; then
-    wget https://boostorg.jfrog.io/artifactory/main/release/1.73.0/source/boost_1_73_0.tar.gz
+if [ ! -f "./boost_1__0.tar.gz" ]; then
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz
 fi
 
-if [ ! -d "./boost_1_73_0" ]; then
-    tar xzf boost_1_73_0.tar.gz
-    cd boost_1_73_0
+if [ ! -d "./boost_1_75_0" ]; then
+    tar xzf boost_1_75_0.tar.gz
+    cd boost_1_75_0
     ./bootstrap.sh --prefix="$CURRDIR"/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
     ./b2 -j"$(sysctl -n hw.logicalcpu)" cxxflags="-fPIC" runtime-link=static variant=release link=static cxxflags="-mmacosx-version-min=$TARGET_SYSVER" install
 fi
@@ -107,7 +107,7 @@ MACOSX_DEPLOYMENT_TARGET=$TARGET_SYSVER cmake "$CURRDIR"/gtsam -DCMAKE_BUILD_TYP
     -DBoost_USE_STATIC_LIBS=ON \
     -DBoost_USE_STATIC_RUNTIME=ON -DGTSAM_WITH_TBB=OFF \
     -DBOOST_ROOT="$CURRDIR/boost_install" \
-    -DCMAKE_PREFIX_PATH="$CURRDIR/boost_install/lib/cmake/Boost-1.73.0/" \
+    -DCMAKE_PREFIX_PATH="$CURRDIR/boost_install/lib/cmake/Boost-1.75.0/" \
     -DBoost_NO_SYSTEM_PATHS=OFF \
     -DBUILD_STATIC_METIS=ON \
     -DGTSAM_BUILD_PYTHON=ON \
