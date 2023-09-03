@@ -8,5 +8,7 @@ gtsam/*
 gtsam_python@3.8/*
 gtsam_python@3.9/*
 gtsam_python@3.10/*
+gtsam_python@3.11/*
 wheelhouse/*
 libpython-not-needed-symbols-exported-by-interpreter
+.DS_Store

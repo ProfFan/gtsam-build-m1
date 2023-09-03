@@ -2,12 +2,12 @@
 
 CURRDIR=$(pwd)
 
-TARGET_SYSVER=11.0
+TARGET_SYSVER=12.3
 
-GTSAM_BRANCH="release/4.2a5"
-GTSAM_LIB_VERSION="4.2.0"
-GTSAM_PYTHON_VERSION="4.2a5"
-PYTHON_VER="python@3.8"
+GTSAM_BRANCH="release/4.2"
+GTSAM_LIB_VERSION="4.2"
+GTSAM_PYTHON_VERSION="4.2"
+PYTHON_VER="python@3.11"
 HOMEBREW_PREFIX="/opt/homebrew"
 
 echo "CURRDIR=$CURRDIR"
@@ -48,9 +48,8 @@ if [ ! -d "./gtsam" ]; then
     git clone https://github.com/borglab/gtsam.git -b $GTSAM_BRANCH
 fi
 
-brew install wget
-
-if [ ! -f "./boost_1__0.tar.gz" ]; then
+if [ ! -f "./boost_1_75_0.tar.gz" ]; then
+    brew install wget
     wget https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz
 fi
 
